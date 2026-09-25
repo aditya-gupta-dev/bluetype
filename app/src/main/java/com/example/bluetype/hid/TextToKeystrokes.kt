@@ -43,24 +43,36 @@ object TextToKeystrokes {
         val reports = ArrayList<KeyReport>(normalized.length * 2)
         var droppedCount = 0
 
+        var previousReport: KeyReport? = null
+
         for (char in normalized) {
             val report = UsKeyboardMap.getReport(char)
             if (report != null) {
+                if (previousReport != null && previousReport.keycode == report.keycode) {
+                    reports.add(KeyReport.EMPTY)
+                }
                 reports.add(report)
-                reports.add(KeyReport.EMPTY)
+                previousReport = report
             } else {
                 if (skipUnsupported) {
                     droppedCount++
                 } else {
                     val replacementReport = UsKeyboardMap.getReport(replacementChar)
                     if (replacementReport != null) {
+                        if (previousReport != null && previousReport.keycode == replacementReport.keycode) {
+                            reports.add(KeyReport.EMPTY)
+                        }
                         reports.add(replacementReport)
-                        reports.add(KeyReport.EMPTY)
+                        previousReport = replacementReport
                     } else {
                         droppedCount++
                     }
                 }
             }
+        }
+
+        if (reports.isNotEmpty() && reports.last() != KeyReport.EMPTY) {
+            reports.add(KeyReport.EMPTY)
         }
 
         return ConversionResult(reports = reports, droppedCharCount = droppedCount)

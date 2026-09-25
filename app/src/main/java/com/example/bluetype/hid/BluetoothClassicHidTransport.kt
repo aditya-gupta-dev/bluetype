@@ -302,7 +302,7 @@ class BluetoothClassicHidTransport(
             // Non-blocking retry with backoff to absorb Bluetooth L2CAP buffer saturation
             var attempts = 0
             var dispatched = false
-            while (!dispatched && attempts < 12) {
+            while (!dispatched && attempts < 50) {
                 try {
                     dispatched = hid.sendReport(
                         device,
@@ -321,7 +321,7 @@ class BluetoothClassicHidTransport(
             }
 
             if (!dispatched) {
-                Timber.w("[ERR_SEND_FAILED: 0x05] Bluetooth sendReport buffer exhausted at report %d after 12 retries", i)
+                Timber.w("[ERR_SEND_FAILED: 0x05] Bluetooth sendReport buffer exhausted at report %d after 50 retries", i)
             }
 
             sentCount++
@@ -332,8 +332,9 @@ class BluetoothClassicHidTransport(
                 // Post-release delay between discrete characters
                 delay(interKeyDelayMs)
             } else {
-                // Hold key-down long enough for Windows HID stack to reliably sample it
-                delay(pressPulseMs)
+                // Hold key-down long enough for Windows HID stack to reliably sample it,
+                // and respect the user's typing delay setting.
+                delay(pressPulseMs + interKeyDelayMs)
             }
         }
 
